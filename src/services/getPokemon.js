@@ -1,18 +1,18 @@
 const axios = require('axios');
 const PokemonModel = require('../models/pokemon');
 const PokemonIdsModel = require('../models/pokemonIds');
+// const schema = require('../models/schema'); //* custom schema
 
-const limit = 10;
-const uri = `https://pokeapi.co/api/v2/pokemon`;
+const uri = `https://pokeapi.co/api/v2/pokemon`; //* uri to pull Ids
 
 module.exports = {
-  getIds: async () => {
+  getIds: async (limit) => {
     try {
-      const data = await axios.get(uri, { params: { limit } });
-      await PokemonIdsModel.insertMany(data.data.results),
-        (err) => console.log(err);
+      const { data } = await axios.get(uri, { params: { limit } });
+      await PokemonIdsModel.insertMany(data.results);
     } catch (err) {
-      console.log(err);
+      console.log('getIds()', err);
+      throw err;
     }
     return 'Get ids complete';
   },
@@ -21,17 +21,17 @@ module.exports = {
       const ids = await PokemonIdsModel.find({});
 
       const array = await Promise.all(
-        ids.map(async (id) => {
-          const result = await axios.get(
-            `https://pokeapi.co/api/v2/pokemon/${id.name}`
-          );
-          const pokemon = new PokemonModel({ ...result.data });
+        ids.map(async ({ url }) => {
+          const { data } = await axios.get(url);
+          const pokemon = new PokemonModel({ ...data });
+          // const pokemon = { ...schema, ...data }; //* custom schema without mongoose
           return pokemon;
         })
       );
-      await PokemonModel.insertMany(array), (err) => console.log(err);
+      await PokemonModel.insertMany(array);
     } catch (err) {
-      console.log('getPokemon() failed', err);
+      console.log('getPokemon()', err);
+      throw err;
     }
     return 'Get pokemon complete';
   },
